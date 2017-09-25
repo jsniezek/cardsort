@@ -1,8 +1,11 @@
-.active {
+.active .card-rect{
+  /* styles rectangle of active card (card is a 'g' element) */
   stroke: #222;
   stroke-width: 2px;
 }
 
-.card {
-  /*styles*/
+.card-rect {
+  /* applies to rect objects that represent the cards */
+  stroke: #ADADA9;
+  stroke-width: 1px;
 }

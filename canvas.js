@@ -1,9 +1,8 @@
 var svg = d3.select("svg"),
     width = +svg.attr("width"),
     height = +svg.attr("height"),
-    radius = 32,
-    cardWidth = 96,
-    cardHeight = 64;
+    cardWidth = 130,
+    cardHeight = 90;
 
 var cards = d3.range(10).map(function(d, i) {
   return {
@@ -19,26 +18,44 @@ var cards = d3.range(10).map(function(d, i) {
 var color = d3.scaleSequential().domain([0, 10])
 	.interpolator(d3.interpolateRainbow);
 
-svg.selectAll("rect")
+svg.selectAll(".card")
   .data(cards)
-  .enter().append("rect")
-    .attr("x", function(d) { return d.x; })
-    .attr("y", function(d) { return d.y; })
-    .attr("width", cardWidth)
-    .attr("height", cardHeight)
-    .classed("card", true)
-    .style("fill", function(d, i) { return "#ccc"; })
-    .call(d3.drag()
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", dragended));
+  .enter().append("g")
+  .classed("card", true)
+  .call(createCardWithText)
+  .call(d3.drag()
+      .on("start", dragstarted)
+      .on("drag", dragged)
+      .on("end", dragended));
+
+function createCardWithText(selection) {
+  selection
+    .append("rect")
+      .attr("x", function(d) { return d.x; })
+      .attr("y", function(d) { return d.y; })
+      .attr("width", cardWidth)
+      .attr("height", cardHeight)
+      .classed("card-rect", true)
+      .style("fill", "#fff")
+      ;
+
+  selection
+  .append('text')
+    .text(function(d, i) {
+      return "card" + (i + 1);
+    })
+    .attr('x', function(d) { return d.x + 50; })
+    .attr('y', function(d) { return d.y + 50; });
+}
+
 
 function dragstarted(d) {
   d3.select(this).raise().classed("active", true);
 }
 
 function dragged(d) {
-  d3.select(this).attr("x", d.x = d3.event.x).attr("y", d.y = d3.event.y);
+  d3.select(this).select("text").attr("x", d.x = d3.event.x + 50).attr("y", d.y = d3.event.y + 50);
+  d3.select(this).select("rect").attr("x", d.x = d3.event.x).attr("y", d.y = d3.event.y);
 }
 
 function dragended(d) {
