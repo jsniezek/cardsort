@@ -90,7 +90,12 @@ function checkCollisions(selection) {
 
   })
   if (!detected) {
-    svg.selectAll("rect").filter(function(d) { return d.key === draggedItem.key}).style("fill", "#ffffff");
+    draggedItem.group = null;
+
+    svg.selectAll("rect")
+      .filter(function(d)
+      { return d.key === draggedItem.key})
+      .style("fill", "#ffffff");
   }
   //items.style("fill", "blue");
   // find classes of collided items.
@@ -98,9 +103,10 @@ function checkCollisions(selection) {
 }
 
 function addToGroup(draggedItem, target) {
+ debugger;
 
   //first, see if target is in a group.
-  if(!target.group)
+  if( target.group == null )
   {
     target.group = numGroups++;
     console.log(numGroups);
