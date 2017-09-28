@@ -8,9 +8,134 @@
   /* applies to rect objects that represent the cards */
   stroke: #ADADA9;
   stroke-width: 1px;
+  fill: #FFFFFF;
+  fill-opacity: 0.8;
+  box-shadow: 0 2px 4px 0 rgba(0,0,0,0.10);
 }
 
 .text {
-  font-family: sans-serif;
-  font-size: 1.25em;
+  font-family: OpenSans-Semibold;
+  font-size: 14px;
+}
+
+/* card colors */
+
+.g1 .card-rect {
+  /* group 1 */
+  fill: #F0FFF8;
+  stroke: #00B55D;
+}
+
+.g1 .text {
+  fill: #00934C;
+}
+
+.g2 .card-rect {
+  /* group 2 */
+  fill: #EFEFFF;
+  stroke: #1515D9;
+}
+
+.g2 .text {
+  fill: #1111E2;
+}
+
+.g3 .card-rect {
+  /* group 2 */
+  fill: #FEF7F0;
+  stroke: #DF7200;
+}
+
+.g3 .text {
+  fill: #AD5900;
+}
+
+.g4 .card-rect {
+  /* group 1 */
+  fill: #EEFCFF;
+  stroke: #00A3CC;
+}
+
+.g4 .text {
+  fill: #007998;
+}
+
+.g5 .card-rect {
+  /* group 2 */
+  fill: #FFFFF1;
+  stroke: #A6A600;
+}
+
+.g5 .text {
+  fill: #949400;
+}
+
+.g6 .card-rect {
+  /* group 1 */
+  fill: #FAF5FF;
+  stroke: #901CFE;
+}
+
+.g6 .text {
+  fill: #810BF0;
+}
+
+.g7 .card-rect {
+  /* group 2 */
+  fill: #FFF3F9;
+  stroke: #E20074;
+}
+
+.g7 .text {
+  fill: #DD0072;
+}
+
+.g8 .card-rect {
+  /* group 2 */
+  fill: #F7FEEF;
+  stroke: #57A900;
+}
+
+.g8 .text {
+  fill: #438300;
+}
+
+.g9 .card-rect {
+  /* group 2 */
+  fill: #EFF7FF;
+  stroke: #006CD3;
+}
+
+.g9 .text {
+  fill: #006DD3;
+}
+
+.g10 .card-rect {
+  /* group 1 */
+  fill: #FFF2F2;
+  stroke: #DA1515;
+}
+
+.g10 .text {
+  fill: #DC1212;
+}
+
+.g11 .card-rect {
+  /* group 2 */
+  fill: #FFF2FF;
+  stroke: #D800D8;
+}
+
+.g11 .text {
+  fill: #D200D2;
+}
+
+.g12 .card-rect {
+  /* group 2 */
+  fill: #EFFEEF;
+  stroke: #00BC00;
+}
+
+.g12 .text {
+  fill: #00A100;
 }

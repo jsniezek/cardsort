@@ -1,16 +1,23 @@
+
+class Card {
+  constructor(id, x, y) {
+    this.id = id;
+    this.x = x; // x position
+    this.y = y; // y position
+    this.group = null;
+  }
+}
+
 var svg = d3.select("svg"),
     width = +svg.attr("width"),
     height = +svg.attr("height"),
     cardWidth = 130,
     cardHeight = 90;
 
-var cards = d3.range(10).map(function(d, i) {
-  return {
-    x: Math.round(Math.random() * (width - cardWidth * 2) + cardWidth),
-    y: Math.round(Math.random() * (height - cardHeight * 2) + cardHeight),
-    key: i,
-    group: null
-  };
+var cards = d3.range(14).map(function(d, i) {
+  let x = Math.round(Math.random() * (width - cardWidth * 2) + cardWidth);
+  let y = Math.round(Math.random() * (height - cardHeight * 2) + cardHeight);
+  return new Card (i, x, y);
 });
 
 var numGroups = 0;
@@ -38,7 +45,6 @@ function createCardWithText(selection) {
       .attr("width", cardWidth)
       .attr("height", cardHeight)
       .classed("card-rect", true)
-      .style("fill", "#fff")
       ;
 
   //create text element
@@ -69,11 +75,11 @@ function dragended(d) {
 function checkCollisions(selection) {
 
   draggedItem = selection.datum();
-
+  // debugger;
   // find collisions
   var detected = false;
   var items = d3.selectAll("rect").each(function(d) {
-    if (d.key === draggedItem.key) {return;}
+    if (d.id === draggedItem.id) {return;}
 
     if (draggedItem.x < d.x + cardWidth &&
        draggedItem.x + cardWidth > d.x &&
@@ -94,7 +100,7 @@ function checkCollisions(selection) {
 
     svg.selectAll("rect")
       .filter(function(d)
-      { return d.key === draggedItem.key})
+      { return d.id === draggedItem.id})
       .style("fill", "#ffffff");
   }
   //items.style("fill", "blue");
@@ -108,18 +114,23 @@ function addToGroup(draggedItem, target) {
   //first, see if target is in a group.
   if( target.group == null )
   {
-    target.group = numGroups++;
+    numGroups++;
+    target.group = "g" + numGroups;
     console.log(numGroups);
-    svg.selectAll("rect")
+    svg.selectAll("g")
       .filter(function(d)
-      { return d.key === target.key })
-      .style("fill", color(target.group));
+      { return d.id === target.id })
+      // .style("fill", color(target.group))
+      .classed(target.group, true);
   }
+
+  console.log("g" + numGroups)
 
   //now, add dragged item into target item's group
   draggedItem.group = target.group;
-  svg.selectAll("rect")
+  svg.selectAll("g")
     .filter(function(d)
-    { return d.key === draggedItem.key })
-    .style("fill", color(draggedItem.group));
+    { return d.id === draggedItem.id })
+    // .style("fill", color(draggedItem.group))
+    .classed(target.group, true);
 }
