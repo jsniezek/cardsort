@@ -1,3 +1,7 @@
+'use strict';
+
+// todo: maybe don't make these global?
+var svg, cards, cardWidth, cardHeight, numGroups;
 
 class Card {
   constructor(id, x, y) {
@@ -8,36 +12,37 @@ class Card {
   }
 }
 
-var svg = d3.select("svg"),
-    width = +svg.attr("width"),
-    height = +svg.attr("height"),
-    cardWidth = 130,
-    cardHeight = 90;
+function init() {
+  // set up canvas and place cards inside
+  numGroups = 0;
+  cardWidth = 130;
+  cardHeight = 90;
+  svg = d3.select("svg");
 
-var cards = d3.range(14).map(function(d, i) {
-  let x = Math.round(Math.random() * (width - cardWidth * 2) + cardWidth);
-  let y = Math.round(Math.random() * (height - cardHeight * 2) + cardHeight);
-  return new Card (i, x, y);
-});
+  var width = +svg.attr("width"),
+      height = +svg.attr("height");
 
-var numGroups = 0;
+  cards = d3.range(14).map(function(d, i) {
+    let x = Math.round(Math.random() * (width - cardWidth * 2) + cardWidth);
+    let y = Math.round(Math.random() * (height - cardHeight * 2) + cardHeight);
+    return new Card (i, x, y);
+  });
 
-var color = d3.scaleSequential().domain([0, 10])
-	.interpolator(d3.interpolateRainbow);
-
-//initial setup of all cards and actions
-svg.selectAll(".card")
-  .data(cards)
-  .enter().append("g")
-  .classed("card", true)
-  .call(createCardWithText)
-  .call(d3.drag()
-      .on("start", dragstarted)
-      .on("drag", dragged)
-      .on("end", dragended));
+  //initial setup of all cards and their interactions
+  svg.selectAll(".card")
+    .data(cards)
+    .enter().append("g")
+    .classed("card", true)
+    .call(createCardWithText)
+    .call(d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended));
+}
 
 //from a blank group, create a new card with a rect and a text element
 function createCardWithText(selection) {
+
   selection
     .append("rect")
       .attr("x", function(d) { return d.x; })
@@ -74,8 +79,8 @@ function dragended(d) {
 
 function checkCollisions(selection) {
 
-  draggedItem = selection.datum();
-  // debugger;
+  var draggedItem = selection.datum();
+
   // find collisions
   var detected = false;
   var items = d3.selectAll("rect").each(function(d) {
@@ -103,13 +108,11 @@ function checkCollisions(selection) {
       { return d.id === draggedItem.id})
       .style("fill", "#ffffff");
   }
-  //items.style("fill", "blue");
   // find classes of collided items.
   // select all items with class.
 }
 
 function addToGroup(draggedItem, target) {
- debugger;
 
   //first, see if target is in a group.
   if( target.group == null )
@@ -120,7 +123,6 @@ function addToGroup(draggedItem, target) {
     svg.selectAll("g")
       .filter(function(d)
       { return d.id === target.id })
-      // .style("fill", color(target.group))
       .classed(target.group, true);
   }
 
@@ -131,6 +133,7 @@ function addToGroup(draggedItem, target) {
   svg.selectAll("g")
     .filter(function(d)
     { return d.id === draggedItem.id })
-    // .style("fill", color(draggedItem.group))
     .classed(target.group, true);
 }
+
+init();
