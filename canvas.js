@@ -2,6 +2,7 @@
 
 // todo: maybe don't make these global?
 var svg, cards, cardWidth, cardHeight, numGroups;
+var groups = new Map();
 
 class Card {
   constructor(id, x, y) {
@@ -9,6 +10,7 @@ class Card {
     this.x = x; // x position
     this.y = y; // y position
     this.group = null;
+    this.overlaps = [];
   }
 }
 
@@ -74,66 +76,166 @@ function dragged(d) {
 }
 
 function dragended(d) {
-  d3.select(this).classed("active", false).call(checkCollisions);
+  d3.select(this)
+    .classed("active", false)
+    .call(handleCardMove);
 }
 
-function checkCollisions(selection) {
+function handleCardMove(selection) {
 
-  var draggedItem = selection.datum();
+  var draggedCard, newHits; //, unHits
 
-  // find collisions
-  var detected = false;
-  var items = d3.selectAll("rect").each(function(d) {
-    if (d.id === draggedItem.id) {return;}
+  draggedCard = selection.datum();
+  newHits = findHits(draggedCard);
+  // debugger;
+  // unHits = draggedCard.overlaps
+  //           .filter(x => newHits.indexOf(x) == -1);
 
-    if (draggedItem.x < d.x + cardWidth &&
-       draggedItem.x + cardWidth > d.x &&
-       draggedItem.y < d.y + cardHeight &&
-       cardHeight + draggedItem.y > d.y) {
 
-        // collision detected.
-        console.log("I am jojo");
-        console.log("collision!");
-        detected = true;
+  if (newHits.length > 0) {
+    // we've hit one or more cards
+    newHits.push(draggedCard);
+    mergeCards(newHits);
+  }
 
-        addToGroup(draggedItem, d);
-    }
-
-  })
-  if (!detected) {
-    draggedItem.group = null;
+  else {
+    // we're all alone in the universe
+    draggedCard.group = null;
 
     svg.selectAll("rect")
       .filter(function(d)
-      { return d.id === draggedItem.id})
+      { return d.id === draggedCard.id})
       .style("fill", "#ffffff");
   }
-  // find classes of collided items.
-  // select all items with class.
+
+  // if (unHits.length > 0) {
+    // we've moved this card off one or more items
+    // we need to see if their groups have changed
+    // unmergeOldGroups(draggedCard, unHits);
+    // then rectify duplicate group colors, if any.
+  // }
+
 }
 
-function addToGroup(draggedItem, target) {
+function findHits(activeCard) {
+// let's see what this card overlaps with.
 
-  //first, see if target is in a group.
-  if( target.group == null )
-  {
-    numGroups++;
-    target.group = "g" + numGroups;
-    console.log(numGroups);
-    svg.selectAll("g")
-      .filter(function(d)
-      { return d.id === target.id })
-      .classed(target.group, true);
+  var hits = [];
+
+  // find collisions in the canvas
+  var items = d3.selectAll("rect").each(function(d) {
+    if (d.id === activeCard.id) {return;} // self
+
+    if (activeCard.x < d.x + cardWidth &&
+       activeCard.x + cardWidth > d.x &&
+       activeCard.y < d.y + cardHeight &&
+       cardHeight + activeCard.y > d.y) {
+
+        // collision detected.
+        console.log("I am jojo");
+        hits.push(d);
+    }
+  })
+
+  return hits;
+}
+
+function mergeCards(cardsToMerge) {
+
+  var biggestGroup = null;
+
+  // see what groups need to be merged
+  var groupsToMerge = new Set();
+  var grouplessCards = [];
+  for (var i = 0; i < cardsToMerge.length; i += 1) {
+    // debugger;
+    if (cardsToMerge[i].group != null)
+    {
+      groupsToMerge.add(cardsToMerge[i].group);
+    }
+    else {
+      grouplessCards.push(cardsToMerge[i]);
+    }
   }
 
-  console.log("g" + numGroups)
+  // if none of the cards are in a group, we need a new group.
+  if (groupsToMerge.size === 0)
+  {
+    // make a new group.
+    numGroups++;
+    biggestGroup = "g" + numGroups;
+    var items = [];
 
-  //now, add dragged item into target item's group
-  draggedItem.group = target.group;
+    for (var i = 0; i < cardsToMerge.length; i += 1) {
+      cardsToMerge[i].group = biggestGroup;
+      items.push(cardsToMerge[i].id);
+    }
+
+    groups.set(biggestGroup, items) //adds a group to the pile
+  }
+
+  // one or more cards are in a group, so we find the group with the largest size
+  else {
+    //find the largest group
+    var largest = 0;
+
+    for (let g of groupsToMerge) {
+      let len = groups.get(g).length; //gets value of key, then length of value (which is array)
+      if (len > largest) {
+        //note: if 2 or more are the same size, we go with the first match.
+        biggestGroup = g;
+        largest = len;
+      }
+    }
+
+    //ok, found the largest.
+    //now, set all loser group items to this group.
+    var kSet = groups.get(biggestGroup); // get the array of member card ids from group
+    for (let g of groupsToMerge) {
+      if (g != biggestGroup) {
+        let loserGroup = groups.get(g); //gets value array from group
+
+        //first, unclass these ones
+        svg.selectAll("g")
+          .filter(function(d)
+          { return d.group === g })
+          .classed(g, false);
+
+        //then, add them to the biggest group
+        for (var i = 0; i < loserGroup.length; i++)
+        {
+          let id = loserGroup[i];
+          let something = cards.find(card => card.id === id);
+          something.group = biggestGroup;
+          kSet.push(id);
+        }
+
+        //finally, remove the group
+        groups.delete(g);
+      }
+    }
+
+    //now, set all group-less items to this group.
+    for (var i = 0; i < grouplessCards.length; i++)
+    {
+      let c = grouplessCards[i];
+      c.group = biggestGroup;
+      kSet.push(c.id);
+    }
+
+    //then, eliminate the losing groups.
+    // for (let grp of groupsToMerge) {
+    //   if (grp != biggestGroup) {
+    //
+    //
+    //   }
+    // }
+  }
+
   svg.selectAll("g")
     .filter(function(d)
-    { return d.id === draggedItem.id })
-    .classed(target.group, true);
+    { return d.group === biggestGroup })
+    .classed(biggestGroup, true);
 }
 
 init();
