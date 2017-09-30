@@ -84,28 +84,30 @@ function dragended(d) {
 function handleCardMove(selection) {
 
   var draggedCard, newHits; //, unHits
-
   draggedCard = selection.datum();
+
+  //first, clear dragged card from any old groups the card was in.
+  if (draggedCard.group != null)
+  {
+    svg.selectAll("g")
+      .filter(function(d)
+      { return d.id === draggedCard.id})
+      .classed(draggedCard.group, false);
+
+    let curGroup = groups.get(draggedCard.group);
+    var index = curGroup.indexOf(draggedCard.id);
+    curGroup.splice(index, 1);
+  }
+  draggedCard.group = null;
+
   newHits = findHits(draggedCard);
-  // debugger;
   // unHits = draggedCard.overlaps
   //           .filter(x => newHits.indexOf(x) == -1);
-
 
   if (newHits.length > 0) {
     // we've hit one or more cards
     newHits.push(draggedCard);
     mergeCards(newHits);
-  }
-
-  else {
-    // we're all alone in the universe
-    draggedCard.group = null;
-
-    svg.selectAll("rect")
-      .filter(function(d)
-      { return d.id === draggedCard.id})
-      .style("fill", "#ffffff");
   }
 
   // if (unHits.length > 0) {
