@@ -10,7 +10,7 @@ class Card {
     this.x = x; // x position
     this.y = y; // y position
     this.group = null;
-    this.overlaps = [];
+    this.overlaps = new Set();
   }
 }
 
@@ -83,10 +83,50 @@ function dragended(d) {
 
 function handleCardMove(selection) {
 
-  var draggedCard, newHits; //, unHits
-  draggedCard = selection.datum();
+  var draggedCard = selection.datum();
+  var newHits = findHits(draggedCard);
 
-  //first, clear dragged card from any old groups the card was in.
+
+  //first, see how we've impacted prior overlaps
+  if (draggedCard.group != null)
+  {
+
+    var arrOfHitGroups = [];
+    for (let c of draggedCard.overlaps) {
+      //if we get here, we may have one or more orhaned cards.
+      //we need to see if we've created islands in the group.
+      //to do this, we go through each immediate hit, and see what it's connected to.
+      let hitgroup = getChainedCards(c);
+      if (hitgroup.size === 0) {
+        // We have an orphan card. Remove it's membership.
+        removeCardClass(c, c.group);
+        let groupOfCard = groups.get(c.group)
+        let index = groupOfCard.indexOf(c);
+        groupOfCard.splice(index, 1);
+        c.group = null;
+      }
+      else {
+        arrOfHitGroups.push();
+      }
+      console.log(arrOfHitGroups);
+    }
+
+    //then, we need to see if any of the chains are actually connected. we'll merge those.
+    //finally, we'll need to make new groups for any islands.
+    if (arrOfHitGroups.length > 1) {
+
+    }
+
+    //Behavior side note: the biggest branch wins the color,
+    //unless current card causes this branch to join a larger group.
+    //To do this, we need to do is save the subgroups for the end.
+    //if the winner ceases to exist after a merge,
+    //hand ownership of that group to the next biggest.
+
+
+  }
+
+  //see if we're leaving a group.
   if (draggedCard.group != null)
   {
     svg.selectAll("g")
@@ -94,35 +134,27 @@ function handleCardMove(selection) {
       { return d.id === draggedCard.id})
       .classed(draggedCard.group, false);
 
+    // remove card from group's array of cards.
     let curGroup = groups.get(draggedCard.group);
     var index = curGroup.indexOf(draggedCard.id);
     curGroup.splice(index, 1);
   }
-  draggedCard.group = null;
 
-  newHits = findHits(draggedCard);
-  // unHits = draggedCard.overlaps
-  //           .filter(x => newHits.indexOf(x) == -1);
+  draggedCard.group = null; //todo: change this probably
 
-  if (newHits.length > 0) {
+  if (newHits.size > 0) {
     // we've hit one or more cards
-    newHits.push(draggedCard);
-    mergeCards(newHits);
+    draggedCard.overlaps = new Set(newHits); //save overlaps
+    var arr = [...draggedCard.overlaps];
+    arr.push(draggedCard);
+    mergeCards(arr);
   }
-
-  // if (unHits.length > 0) {
-    // we've moved this card off one or more items
-    // we need to see if their groups have changed
-    // unmergeOldGroups(draggedCard, unHits);
-    // then rectify duplicate group colors, if any.
-  // }
-
 }
 
 function findHits(activeCard) {
 // let's see what this card overlaps with.
 
-  var hits = [];
+  var hits = new Set();
 
   // find collisions in the canvas
   var items = d3.selectAll("rect").each(function(d) {
@@ -134,12 +166,42 @@ function findHits(activeCard) {
        cardHeight + activeCard.y > d.y) {
 
         // collision detected.
+        // debugger;
         console.log("I am jojo");
-        hits.push(d);
+        hits.add(d);
     }
   })
 
+  //debugger;
   return hits;
+}
+
+function getChainedCards(cur) {
+  var fullChain = findHits(cur);
+  var curChain = new Set();
+  var newOnes = new Set();
+
+  // we seed newOnes with initial set.
+  for (let item of fullChain) newOnes.add(item);
+
+  while (newOnes.size > 0) {
+    for (let card of newOnes) {
+      let hts = findHits(card); // find it's hits.
+      if (hts.size > 1) {
+        for (let card of hts) {
+          curChain.add(card); // add new hits to the current chain
+        }
+      }
+    }
+    // see what we've found in the current chain that hasn't been found before
+    newOnes = new Set(
+      [...curChain].filter(x => !fullChain.has(x)));
+
+    // add new hits to the full chain and clear curChain so we can start fresh.
+    for (let item of newOnes) fullChain.add(item);
+    curChain.clear();
+  }
+  return fullChain;
 }
 
 function mergeCards(cardsToMerge) {
@@ -148,37 +210,34 @@ function mergeCards(cardsToMerge) {
 
   // see what groups need to be merged
   var groupsToMerge = new Set();
-  var grouplessCards = [];
-  for (var i = 0; i < cardsToMerge.length; i += 1) {
-    // debugger;
-    if (cardsToMerge[i].group != null)
+  var grouplessCards = new Set();
+
+  for (let card of cardsToMerge) {
+    if (card.group != null)
     {
-      groupsToMerge.add(cardsToMerge[i].group);
+      groupsToMerge.add(card.group);
     }
     else {
-      grouplessCards.push(cardsToMerge[i]);
+      grouplessCards.add(card);
     }
   }
 
   // if none of the cards are in a group, we need a new group.
   if (groupsToMerge.size === 0)
   {
-    // make a new group.
     numGroups++;
     biggestGroup = "g" + numGroups;
     var items = [];
 
-    for (var i = 0; i < cardsToMerge.length; i += 1) {
-      cardsToMerge[i].group = biggestGroup;
-      items.push(cardsToMerge[i].id);
+    for (let card of cardsToMerge) {
+      card.group = biggestGroup;
+      items.push(card);
     }
-
     groups.set(biggestGroup, items) //adds a group to the pile
   }
 
-  // one or more cards are in a group, so we find the group with the largest size
   else {
-    //find the largest group
+    // one or more cards are in a group, so we find the group with the largest size
     var largest = 0;
 
     for (let g of groupsToMerge) {
@@ -206,10 +265,10 @@ function mergeCards(cardsToMerge) {
         //then, add them to the biggest group
         for (var i = 0; i < loserGroup.length; i++)
         {
-          let id = loserGroup[i];
-          let something = cards.find(card => card.id === id);
+          let itemToTest = loserGroup[i];
+          let something = cards.find(card => card.id === itemToTest.id);
           something.group = biggestGroup;
-          kSet.push(id);
+          kSet.push(itemToTest);
         }
 
         //finally, remove the group
@@ -218,11 +277,10 @@ function mergeCards(cardsToMerge) {
     }
 
     //now, set all group-less items to this group.
-    for (var i = 0; i < grouplessCards.length; i++)
+    for (let card of grouplessCards)
     {
-      let c = grouplessCards[i];
-      c.group = biggestGroup;
-      kSet.push(c.id);
+      card.group = biggestGroup;
+      kSet.push(card);
     }
 
     //then, eliminate the losing groups.
@@ -238,6 +296,20 @@ function mergeCards(cardsToMerge) {
     .filter(function(d)
     { return d.group === biggestGroup })
     .classed(biggestGroup, true);
+}
+
+function addCardClass (card, group) {
+  svg.selectAll("g")
+    .filter(function(d)
+    { return d.id === card.id})
+    .classed(group, true);
+}
+
+function removeCardClass (card, group) {
+  svg.selectAll("g")
+    .filter(function(d)
+    { return d.id === card.id})
+    .classed(group, false);
 }
 
 init();
