@@ -143,11 +143,18 @@ function handleCardMove(selection) {
       //make sure there are no overlaps by finding the intersect of the groups.
       var i = 0;
       while (i+1 < arrOfHitGroups.length) {
+        let a = arrOfHitGroups[i];
+        let b = arrOfHitGroups[i+1];
         let intersect = new Set(
-          [...arrOfHitGroups[i]].filter(x => arrOfHitGroups[i+1].has(x)));
+          [...a].filter(x => b.has(x)));
 
         if (intersect.size > 0) {
-          arrOfHitGroups[i].add([...arrOfHitGroups[i+1]]);
+          //merge these groups into a single group
+          for (let card of arrOfHitGroups[i+1]) {
+            arrOfHitGroups[i].add(card);
+          }
+          //get rid of the second group.
+          arrOfHitGroups.splice(i+1, 1);
         }
         else {
           i++;
@@ -301,11 +308,15 @@ function mergeCards(cardsToMerge) {
     var largest = 0;
 
     for (let g of groupsToMerge) {
-      let len = groups.get(g).length; //gets value of key, then length of value (which is array)
-      if (len > largest) {
-        //note: if 2 or more are the same size, we go with the first match.
-        biggestGroup = g;
-        largest = len;
+      let gg = groups.get(g);
+      if (gg !== null)
+      {
+        let len = gg.length; //gets value of key, then length of value (which is array)
+        if (len > largest) {
+          //note: if 2 or more are the same size, we go with the first match.
+          biggestGroup = g;
+          largest = len;
+        }
       }
     }
 
