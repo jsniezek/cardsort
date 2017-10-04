@@ -40,7 +40,33 @@ function init() {
         .on("start", dragstarted)
         .on("drag", dragged)
         .on("end", dragended));
+
+  // spreadCards();
 }
+
+// function spreadCards() {
+//   var width = +svg.attr("width"),
+//       height = +svg.attr("height");
+//
+//   for (var i = 0; i < cards.length; i++) {
+//     while (findHits(cards[i]).size > 0)
+//     {
+//       cards[i].x = Math.round(Math.random() * (width - cardWidth * 2) + cardWidth);
+//       cards[i].y = Math.round(Math.random() * (height - cardHeight * 2) + cardHeight);
+//     }
+//     svg.selectAll("g")
+//       .filter(function(d)
+//       { return d.id === cards[i].id})
+//       .select("text")
+//         .attr("x", d.x = cards[i].x + 40)
+//         .attr("y", d.y = cards[i].y + 50);
+//
+//     svg.selectAll("g")
+//       .filter(function(d)
+//       { return d.id === cards[i].id})
+//       .select("rect").attr("x", d.x = cards[i].x).attr("y", d.y = cards[i].y);
+//   }
+// }
 
 //from a blank group, create a new card with a rect and a text element
 function createCardWithText(selection) {
@@ -96,8 +122,8 @@ function handleCardMove(selection) {
       //if we get here, we may have one or more orhaned cards.
       //we need to see if we've created islands in the group.
       //to do this, we go through each immediate hit, and see what it's connected to.
-      let hitgroup = getChainedCards(c);
-      if (hitgroup.size === 0) {
+      let chain = getChainedCards(c);
+      if (chain.size < 2) {
         // We have an orphan card. Remove it's membership.
         removeCardClass(c, c.group);
         let groupOfCard = groups.get(c.group)
@@ -106,15 +132,49 @@ function handleCardMove(selection) {
         c.group = null;
       }
       else {
-        arrOfHitGroups.push();
+        arrOfHitGroups.push(chain);
       }
-      console.log(arrOfHitGroups);
     }
 
     //then, we need to see if any of the chains are actually connected. we'll merge those.
     //finally, we'll need to make new groups for any islands.
     if (arrOfHitGroups.length > 1) {
+      console.log("arr" + arrOfHitGroups);
+      //make sure there are no overlaps by finding the intersect of the groups.
+      var i = 0;
+      while (i+1 < arrOfHitGroups.length) {
+        let intersect = new Set(
+          [...arrOfHitGroups[i]].filter(x => arrOfHitGroups[i+1].has(x)));
 
+        if (intersect.size > 0) {
+          arrOfHitGroups[i].add([...arrOfHitGroups[i+1]]);
+        }
+        else {
+          i++;
+        }
+      }
+
+      //now we have the final list of independent groops.
+      if (arrOfHitGroups.length > 1) {
+        //make new groups for all except 1.
+        //NOTE: THIS IS TEMPORARY. I NEED TO FIND THE BIGGEST GROUP.
+        for (i = 1; i < arrOfHitGroups.length; i++) {
+
+          //note: basically duplicate code here...
+          numGroups++;
+          var newGroup = "g" + numGroups;
+          var items = [];
+
+          for (let card of arrOfHitGroups[i]) {
+            removeCardClass(card, card.group);
+            card.group = newGroup;
+            items.push(card);
+            addCardClass(card, card.group);
+          }
+          groups.set(newGroup, items) //adds a group to the pile
+        }
+
+      }
     }
 
     //Behavior side note: the biggest branch wins the color,
@@ -145,6 +205,11 @@ function handleCardMove(selection) {
   if (newHits.size > 0) {
     // we've hit one or more cards
     draggedCard.overlaps = new Set(newHits); //save overlaps
+    for (let hit of newHits) {
+      // the hits need to know that they are overlapping too.
+      hit.overlaps.add(draggedCard);
+    }
+
     var arr = [...draggedCard.overlaps];
     arr.push(draggedCard);
     mergeCards(arr);
@@ -160,28 +225,23 @@ function findHits(activeCard) {
   var items = d3.selectAll("rect").each(function(d) {
     if (d.id === activeCard.id) {return;} // self
 
-    if (activeCard.x < d.x + cardWidth &&
-       activeCard.x + cardWidth > d.x &&
-       activeCard.y < d.y + cardHeight &&
-       cardHeight + activeCard.y > d.y) {
+    if (activeCard.x < d.x + cardWidth && activeCard.x + cardWidth > d.x &&
+        activeCard.y < d.y + cardHeight && cardHeight + activeCard.y > d.y) {
 
         // collision detected.
-        // debugger;
         console.log("I am jojo");
         hits.add(d);
     }
   })
-
-  //debugger;
   return hits;
 }
 
 function getChainedCards(cur) {
-  var fullChain = findHits(cur);
+  var fullChain = findHits(cur).add(cur);
   var curChain = new Set();
   var newOnes = new Set();
 
-  // we seed newOnes with initial set.
+  // we seed newOnes with initial set of hits,
   for (let item of fullChain) newOnes.add(item);
 
   while (newOnes.size > 0) {
