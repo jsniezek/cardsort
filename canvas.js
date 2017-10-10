@@ -14,6 +14,9 @@ class Card {
   }
 }
 
+var fruits = ["Apple", "Banana", "Strawberry", "Apricot", "Jackfruit", "Papaya",
+              "Fig", "Durian", "Mango", "Watermelon", "Plum", "Cucumber", "Lemon", "Avocado"];
+
 function init() {
   // set up canvas and place cards inside
   numGroups = 0;
@@ -68,7 +71,7 @@ function createCardWithText(selection) {
   selection
     .append('text')
       .text(function(d, i) {
-        return "card" + (i + 1);
+        return fruits[i];
       })
       .attr('x', function(d) { return d.x + 40; })
       .attr('y', function(d) { return d.y + 50; })
