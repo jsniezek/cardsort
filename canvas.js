@@ -24,9 +24,19 @@ function init() {
   var width = +svg.attr("width"),
       height = +svg.attr("height");
 
+  let ix = 10;
+  let iy = 10;
+
   cards = d3.range(14).map(function(d, i) {
-    let x = Math.round(Math.random() * (width - cardWidth * 2) + cardWidth);
-    let y = Math.round(Math.random() * (height - cardHeight * 2) + cardHeight);
+    if (ix > width - (cardWidth + 10))
+    {
+      ix = Math.round(Math.random() * 10);
+      iy += (cardHeight + 10);
+
+    }
+    let x = (ix + Math.round(Math.random() * 10)) % (width - (cardWidth + 10));
+    ix = x + cardWidth + 2;
+    let y = iy + Math.round(Math.random() * 10);
     return new Card (i, x, y);
   });
 
@@ -40,33 +50,7 @@ function init() {
         .on("start", dragstarted)
         .on("drag", dragged)
         .on("end", dragended));
-
-  // spreadCards();
 }
-
-// function spreadCards() {
-//   var width = +svg.attr("width"),
-//       height = +svg.attr("height");
-//
-//   for (var i = 0; i < cards.length; i++) {
-//     while (findHits(cards[i]).size > 0)
-//     {
-//       cards[i].x = Math.round(Math.random() * (width - cardWidth * 2) + cardWidth);
-//       cards[i].y = Math.round(Math.random() * (height - cardHeight * 2) + cardHeight);
-//     }
-//     svg.selectAll("g")
-//       .filter(function(d)
-//       { return d.id === cards[i].id})
-//       .select("text")
-//         .attr("x", d.x = cards[i].x + 40)
-//         .attr("y", d.y = cards[i].y + 50);
-//
-//     svg.selectAll("g")
-//       .filter(function(d)
-//       { return d.id === cards[i].id})
-//       .select("rect").attr("x", d.x = cards[i].x).attr("y", d.y = cards[i].y);
-//   }
-// }
 
 //from a blank group, create a new card with a rect and a text element
 function createCardWithText(selection) {
@@ -277,7 +261,7 @@ function mergeCards(cardsToMerge) {
 
   // see what groups need to be merged
   var groupsToMerge = new Set();
-  var grouplessCards = new Set();
+  var soloCards = new Set();
 
   for (let card of cardsToMerge) {
     if (card.group != null)
@@ -285,7 +269,7 @@ function mergeCards(cardsToMerge) {
       groupsToMerge.add(card.group);
     }
     else {
-      grouplessCards.add(card);
+      soloCards.add(card);
     }
   }
 
@@ -348,7 +332,7 @@ function mergeCards(cardsToMerge) {
     }
 
     //now, set all group-less items to this group.
-    for (let card of grouplessCards)
+    for (let card of soloCards)
     {
       card.group = biggestGroup;
       kSet.push(card);
